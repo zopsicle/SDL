@@ -1833,7 +1833,7 @@ typedef struct SDL_GPUGraphicsPipelineTargetInfo
 typedef struct SDL_GPUGraphicsPipelineCreateInfo
 {
     SDL_GPUShader *vertex_shader;                   /**< The vertex shader used by the graphics pipeline. */
-    SDL_GPUShader *fragment_shader;                 /**< The fragment shader used by the graphics pipeline. */
+    SDL_GPUShader *fragment_shader;                 /**< The fragment shader used by the graphics pipeline, may be NULL. */
     SDL_GPUVertexInputState vertex_input_state;     /**< The vertex layout of the graphics pipeline. */
     SDL_GPUPrimitiveType primitive_type;            /**< The primitive topology of the graphics pipeline. */
     SDL_GPURasterizerState rasterizer_state;        /**< The rasterizer state of the graphics pipeline. */

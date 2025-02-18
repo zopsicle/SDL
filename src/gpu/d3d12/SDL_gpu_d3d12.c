@@ -2364,7 +2364,7 @@ static D3D12GraphicsRootSignature *D3D12_INTERNAL_CreateGraphicsRootSignature(
         parameterCount += 1;
     }
 
-    if (fragmentShader->num_samplers) {
+    if (fragmentShader != NULL && fragmentShader->num_samplers) {
         // Fragment Samplers
         descriptorRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
         descriptorRange.NumDescriptors = fragmentShader->num_samplers;
@@ -2399,7 +2399,7 @@ static D3D12GraphicsRootSignature *D3D12_INTERNAL_CreateGraphicsRootSignature(
         parameterCount += 1;
     }
 
-    if (fragmentShader->numStorageTextures) {
+    if (fragmentShader != NULL && fragmentShader->numStorageTextures) {
         // Fragment Storage Textures
         descriptorRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
         descriptorRange.NumDescriptors = fragmentShader->numStorageTextures;
@@ -2418,7 +2418,7 @@ static D3D12GraphicsRootSignature *D3D12_INTERNAL_CreateGraphicsRootSignature(
         parameterCount += 1;
     }
 
-    if (fragmentShader->numStorageBuffers) {
+    if (fragmentShader != NULL && fragmentShader->numStorageBuffers) {
         // Fragment Storage Buffers
         descriptorRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
         descriptorRange.NumDescriptors = fragmentShader->numStorageBuffers;
@@ -2438,14 +2438,16 @@ static D3D12GraphicsRootSignature *D3D12_INTERNAL_CreateGraphicsRootSignature(
     }
 
     // Fragment Uniforms
-    for (Uint32 i = 0; i < fragmentShader->numUniformBuffers; i += 1) {
-        rootParameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-        rootParameter.Descriptor.ShaderRegister = i;
-        rootParameter.Descriptor.RegisterSpace = 3;
-        rootParameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-        rootParameters[parameterCount] = rootParameter;
-        d3d12GraphicsRootSignature->fragmentUniformBufferRootIndex[i] = parameterCount;
-        parameterCount += 1;
+    if (fragmentShader != NULL) {
+        for (Uint32 i = 0; i < fragmentShader->numUniformBuffers; i += 1) {
+            rootParameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+            rootParameter.Descriptor.ShaderRegister = i;
+            rootParameter.Descriptor.RegisterSpace = 3;
+            rootParameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+            rootParameters[parameterCount] = rootParameter;
+            d3d12GraphicsRootSignature->fragmentUniformBufferRootIndex[i] = parameterCount;
+            parameterCount += 1;
+        }
     }
 
     // FIXME: shouldn't have to assert here
@@ -2974,7 +2976,7 @@ static SDL_GPUGraphicsPipeline *D3D12_CreateGraphicsPipeline(
         if (vertShader->stage != SDL_GPU_SHADERSTAGE_VERTEX) {
             SDL_assert_release(!"CreateGraphicsPipeline was passed a fragment shader for the vertex stage");
         }
-        if (fragShader->stage != SDL_GPU_SHADERSTAGE_FRAGMENT) {
+        if (fragShader != NULL && fragShader->stage != SDL_GPU_SHADERSTAGE_FRAGMENT) {
             SDL_assert_release(!"CreateGraphicsPipeline was passed a vertex shader for the fragment stage");
         }
     }
@@ -2983,8 +2985,10 @@ static SDL_GPUGraphicsPipeline *D3D12_CreateGraphicsPipeline(
     SDL_zero(psoDesc);
     psoDesc.VS.pShaderBytecode = vertShader->bytecode;
     psoDesc.VS.BytecodeLength = vertShader->bytecodeSize;
-    psoDesc.PS.pShaderBytecode = fragShader->bytecode;
-    psoDesc.PS.BytecodeLength = fragShader->bytecodeSize;
+    if (fragShader != NULL) {
+        psoDesc.PS.pShaderBytecode = fragShader->bytecode;
+        psoDesc.PS.BytecodeLength = fragShader->bytecodeSize;
+    }
 
     D3D12_INPUT_ELEMENT_DESC inputElementDescs[D3D12_IA_VERTEX_INPUT_STRUCTURE_ELEMENT_COUNT];
     if (createinfo->vertex_input_state.num_vertex_attributes > 0) {
@@ -3070,10 +3074,12 @@ static SDL_GPUGraphicsPipeline *D3D12_CreateGraphicsPipeline(
     pipeline->vertexStorageBufferCount = vertShader->numStorageBuffers;
     pipeline->vertexUniformBufferCount = vertShader->numUniformBuffers;
 
-    pipeline->fragmentSamplerCount = fragShader->num_samplers;
-    pipeline->fragmentStorageTextureCount = fragShader->numStorageTextures;
-    pipeline->fragmentStorageBufferCount = fragShader->numStorageBuffers;
-    pipeline->fragmentUniformBufferCount = fragShader->numUniformBuffers;
+    if (fragShader != NULL) {
+        pipeline->fragmentSamplerCount = fragShader->num_samplers;
+        pipeline->fragmentStorageTextureCount = fragShader->numStorageTextures;
+        pipeline->fragmentStorageBufferCount = fragShader->numStorageBuffers;
+        pipeline->fragmentUniformBufferCount = fragShader->numUniformBuffers;
+    }
 
     SDL_SetAtomicInt(&pipeline->referenceCount, 0);
 

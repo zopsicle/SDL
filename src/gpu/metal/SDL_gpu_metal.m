@@ -1095,7 +1095,7 @@ static SDL_GPUGraphicsPipeline *METAL_CreateGraphicsPipeline(
             if (vertexShader->stage != SDL_GPU_SHADERSTAGE_VERTEX) {
                 SDL_assert_release(!"CreateGraphicsPipeline was passed a fragment shader for the vertex stage");
             }
-            if (fragmentShader->stage != SDL_GPU_SHADERSTAGE_FRAGMENT) {
+            if (fragmentShader != NULL && fragmentShader->stage != SDL_GPU_SHADERSTAGE_FRAGMENT) {
                 SDL_assert_release(!"CreateGraphicsPipeline was passed a vertex shader for the fragment stage");
             }
         }
@@ -1163,7 +1163,7 @@ static SDL_GPUGraphicsPipeline *METAL_CreateGraphicsPipeline(
         // Shaders
 
         pipelineDescriptor.vertexFunction = vertexShader->function;
-        pipelineDescriptor.fragmentFunction = fragmentShader->function;
+        pipelineDescriptor.fragmentFunction = fragmentShader == NULL ? NULL : fragmentShader->function;
 
         // Vertex Descriptor
 
@@ -1216,10 +1216,12 @@ static SDL_GPUGraphicsPipeline *METAL_CreateGraphicsPipeline(
         result->vertexUniformBufferCount = vertexShader->numUniformBuffers;
         result->vertexStorageBufferCount = vertexShader->numStorageBuffers;
         result->vertexStorageTextureCount = vertexShader->numStorageTextures;
-        result->fragmentSamplerCount = fragmentShader->numSamplers;
-        result->fragmentUniformBufferCount = fragmentShader->numUniformBuffers;
-        result->fragmentStorageBufferCount = fragmentShader->numStorageBuffers;
-        result->fragmentStorageTextureCount = fragmentShader->numStorageTextures;
+        if (fragmentShader != NULL) {
+            result->fragmentSamplerCount = fragmentShader->numSamplers;
+            result->fragmentUniformBufferCount = fragmentShader->numUniformBuffers;
+            result->fragmentStorageBufferCount = fragmentShader->numStorageBuffers;
+            result->fragmentStorageTextureCount = fragmentShader->numStorageTextures;
+        }
         return (SDL_GPUGraphicsPipeline *)result;
     }
 }

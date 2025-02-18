@@ -3136,7 +3136,9 @@ static void VULKAN_INTERNAL_DestroyGraphicsPipeline(
         NULL);
 
     (void)SDL_AtomicDecRef(&graphicsPipeline->vertexShader->referenceCount);
-    (void)SDL_AtomicDecRef(&graphicsPipeline->fragmentShader->referenceCount);
+    if (graphicsPipeline->fragmentShader != NULL) {
+        (void)SDL_AtomicDecRef(&graphicsPipeline->fragmentShader->referenceCount);
+    }
 
     SDL_free(graphicsPipeline);
 }
@@ -3870,10 +3872,12 @@ static VulkanGraphicsPipelineResourceLayout *VULKAN_INTERNAL_FetchGraphicsPipeli
     key.vertexStorageTextureCount = vertexShader->numStorageTextures;
     key.vertexStorageBufferCount = vertexShader->numStorageBuffers;
     key.vertexUniformBufferCount = vertexShader->numUniformBuffers;
-    key.fragmentSamplerCount = fragmentShader->numSamplers;
-    key.fragmentStorageTextureCount = fragmentShader->numStorageTextures;
-    key.fragmentStorageBufferCount = fragmentShader->numStorageBuffers;
-    key.fragmentUniformBufferCount = fragmentShader->numUniformBuffers;
+    if (fragmentShader != NULL) {
+        key.fragmentSamplerCount = fragmentShader->numSamplers;
+        key.fragmentStorageTextureCount = fragmentShader->numStorageTextures;
+        key.fragmentStorageBufferCount = fragmentShader->numStorageBuffers;
+        key.fragmentUniformBufferCount = fragmentShader->numUniformBuffers;
+    }
     if (SDL_FindInHashTable(
         renderer->graphicsPipelineResourceLayoutHashTable,
         (const void *)&key,
@@ -3910,9 +3914,9 @@ static VulkanGraphicsPipelineResourceLayout *VULKAN_INTERNAL_FetchGraphicsPipeli
     pipelineResourceLayout->descriptorSetLayouts[2] = VULKAN_INTERNAL_FetchDescriptorSetLayout(
         renderer,
         VK_SHADER_STAGE_FRAGMENT_BIT,
-        fragmentShader->numSamplers,
-        fragmentShader->numStorageTextures,
-        fragmentShader->numStorageBuffers,
+        fragmentShader == NULL ? 0 : fragmentShader->numSamplers,
+        fragmentShader == NULL ? 0 : fragmentShader->numStorageTextures,
+        fragmentShader == NULL ? 0 : fragmentShader->numStorageBuffers,
         0,
         0,
         0);
@@ -3925,7 +3929,7 @@ static VulkanGraphicsPipelineResourceLayout *VULKAN_INTERNAL_FetchGraphicsPipeli
         0,
         0,
         0,
-        fragmentShader->numUniformBuffers);
+        fragmentShader == NULL ? 0 : fragmentShader->numUniformBuffers);
 
     descriptorSetLayouts[0] = pipelineResourceLayout->descriptorSetLayouts[0]->descriptorSetLayout;
     descriptorSetLayouts[1] = pipelineResourceLayout->descriptorSetLayouts[1]->descriptorSetLayout;
@@ -3937,10 +3941,12 @@ static VulkanGraphicsPipelineResourceLayout *VULKAN_INTERNAL_FetchGraphicsPipeli
     pipelineResourceLayout->vertexStorageBufferCount = vertexShader->numStorageBuffers;
     pipelineResourceLayout->vertexUniformBufferCount = vertexShader->numUniformBuffers;
 
-    pipelineResourceLayout->fragmentSamplerCount = fragmentShader->numSamplers;
-    pipelineResourceLayout->fragmentStorageTextureCount = fragmentShader->numStorageTextures;
-    pipelineResourceLayout->fragmentStorageBufferCount = fragmentShader->numStorageBuffers;
-    pipelineResourceLayout->fragmentUniformBufferCount = fragmentShader->numUniformBuffers;
+    if (fragmentShader != NULL) {
+        pipelineResourceLayout->fragmentSamplerCount = fragmentShader->numSamplers;
+        pipelineResourceLayout->fragmentStorageTextureCount = fragmentShader->numStorageTextures;
+        pipelineResourceLayout->fragmentStorageBufferCount = fragmentShader->numStorageBuffers;
+        pipelineResourceLayout->fragmentUniformBufferCount = fragmentShader->numUniformBuffers;
+    }
 
     // Create the pipeline layout
 
@@ -6263,22 +6269,26 @@ static SDL_GPUGraphicsPipeline *VULKAN_CreateGraphicsPipeline(
     shaderStageCreateInfos[0].pName = graphicsPipeline->vertexShader->entrypointName;
     shaderStageCreateInfos[0].pSpecializationInfo = NULL;
 
-    graphicsPipeline->fragmentShader = (VulkanShader *)createinfo->fragment_shader;
-    SDL_AtomicIncRef(&graphicsPipeline->fragmentShader->referenceCount);
+    if (createinfo->fragment_shader == NULL) {
+        graphicsPipeline->fragmentShader = NULL;
+    } else {
+        graphicsPipeline->fragmentShader = (VulkanShader *)createinfo->fragment_shader;
+        SDL_AtomicIncRef(&graphicsPipeline->fragmentShader->referenceCount);
 
-    shaderStageCreateInfos[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    shaderStageCreateInfos[1].pNext = NULL;
-    shaderStageCreateInfos[1].flags = 0;
-    shaderStageCreateInfos[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    shaderStageCreateInfos[1].module = graphicsPipeline->fragmentShader->shaderModule;
-    shaderStageCreateInfos[1].pName = graphicsPipeline->fragmentShader->entrypointName;
-    shaderStageCreateInfos[1].pSpecializationInfo = NULL;
+        shaderStageCreateInfos[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        shaderStageCreateInfos[1].pNext = NULL;
+        shaderStageCreateInfos[1].flags = 0;
+        shaderStageCreateInfos[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        shaderStageCreateInfos[1].module = graphicsPipeline->fragmentShader->shaderModule;
+        shaderStageCreateInfos[1].pName = graphicsPipeline->fragmentShader->entrypointName;
+        shaderStageCreateInfos[1].pSpecializationInfo = NULL;
+    }
 
     if (renderer->debugMode) {
         if (graphicsPipeline->vertexShader->stage != SDL_GPU_SHADERSTAGE_VERTEX) {
             SDL_assert_release(!"CreateGraphicsPipeline was passed a fragment shader for the vertex stage");
         }
-        if (graphicsPipeline->fragmentShader->stage != SDL_GPU_SHADERSTAGE_FRAGMENT) {
+        if (graphicsPipeline->fragmentShader != NULL && graphicsPipeline->fragmentShader->stage != SDL_GPU_SHADERSTAGE_FRAGMENT) {
             SDL_assert_release(!"CreateGraphicsPipeline was passed a vertex shader for the fragment stage");
         }
     }
@@ -6486,7 +6496,7 @@ static SDL_GPUGraphicsPipeline *VULKAN_CreateGraphicsPipeline(
     vkPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     vkPipelineCreateInfo.pNext = NULL;
     vkPipelineCreateInfo.flags = 0;
-    vkPipelineCreateInfo.stageCount = 2;
+    vkPipelineCreateInfo.stageCount = createinfo->fragment_shader == NULL ? 1 : 2;
     vkPipelineCreateInfo.pStages = shaderStageCreateInfos;
     vkPipelineCreateInfo.pVertexInputState = &vertexInputStateCreateInfo;
     vkPipelineCreateInfo.pInputAssemblyState = &inputAssemblyStateCreateInfo;
