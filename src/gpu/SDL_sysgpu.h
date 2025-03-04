@@ -475,7 +475,8 @@ struct SDL_GPUDevice
 
     SDL_GPUSampler *(*CreateSampler)(
         SDL_GPURenderer *driverData,
-        const SDL_GPUSamplerCreateInfo *createinfo);
+        const SDL_GPUSamplerCreateInfo *createinfo,
+        SDL_GPUSamplerBorderColor);
 
     SDL_GPUShader *(*CreateShader)(
         SDL_GPURenderer *driverData,

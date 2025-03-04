@@ -1218,8 +1218,22 @@ typedef enum SDL_GPUSamplerAddressMode
 {
     SDL_GPU_SAMPLERADDRESSMODE_REPEAT,           /**< Specifies that the coordinates will wrap around. */
     SDL_GPU_SAMPLERADDRESSMODE_MIRRORED_REPEAT,  /**< Specifies that the coordinates will wrap around mirrored. */
-    SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE     /**< Specifies that the coordinates will clamp to the 0-1 range. */
+    SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,    /**< Specifies that the coordinates will clamp to the 0-1 range. */
+    SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_BORDER   /**< Specifies that samples outside the 0-1 coordinate range will evaluate to the border color. */
 } SDL_GPUSamplerAddressMode;
+
+/**
+ * Specifies the border color when the address mode is
+ * `SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_BORDER`.
+ *
+ * \sa SDL_CreateGPUSampler
+ */
+typedef enum SDL_GPUSamplerBorderColor {
+    SDL_GPU_SAMPLERBORDERCOLOR_INVALID,
+    SDL_GPU_SAMPLERBORDERCOLOR_TRANSPARENT_BLACK,
+    SDL_GPU_SAMPLERBORDERCOLOR_OPAQUE_BLACK,
+    SDL_GPU_SAMPLERBORDERCOLOR_OPAQUE_WHITE
+} SDL_GPUSamplerBorderColor;
 
 /**
  * Specifies the timing that will be used to present swapchain textures to the
@@ -2339,6 +2353,10 @@ extern SDL_DECLSPEC SDL_GPUGraphicsPipeline * SDLCALL SDL_CreateGPUGraphicsPipel
  *
  * - `SDL_PROP_GPU_SAMPLER_CREATE_NAME_STRING`: a name that can be displayed
  *   in debugging tools.
+ * - `SDL_PROP_GPU_SAMPLER_CREATE_BORDERCOLOR_NUMBER`: the border color of the
+ *   sampler. If specified, must be one of the enumerants of
+ *   `SDL_GPUSamplerBorderColor`. Ignored if none of the address modes are
+ *   `SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_BORDER`.
  *
  * \param device a GPU Context.
  * \param createinfo a struct describing the state of the sampler to create.
@@ -2355,7 +2373,8 @@ extern SDL_DECLSPEC SDL_GPUSampler * SDLCALL SDL_CreateGPUSampler(
     SDL_GPUDevice *device,
     const SDL_GPUSamplerCreateInfo *createinfo);
 
-#define SDL_PROP_GPU_SAMPLER_CREATE_NAME_STRING "SDL.gpu.sampler.create.name"
+#define SDL_PROP_GPU_SAMPLER_CREATE_NAME_STRING        "SDL.gpu.sampler.create.name"
+#define SDL_PROP_GPU_SAMPLER_CREATE_BORDERCOLOR_NUMBER "SDL.gpu.sampler.create.bordercolor"
 
 /**
  * Creates a shader to be used when creating a graphics pipeline.

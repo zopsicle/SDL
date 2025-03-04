@@ -472,6 +472,13 @@ static VkSamplerAddressMode SDLToVK_SamplerAddressMode[] = {
     VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE
 };
 
+static VkBorderColor SDLToVK_SamplerBorderColor[] = {
+    VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK, // INVALID
+    VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK, // TRANSPARENT_BLACK
+    VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,      // OPAQUE_BLACK
+    VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE       // OPAQUE_WHITE
+};
+
 // Structures
 
 typedef struct VulkanMemoryAllocation VulkanMemoryAllocation;
@@ -6612,7 +6619,8 @@ static SDL_GPUComputePipeline *VULKAN_CreateComputePipeline(
 
 static SDL_GPUSampler *VULKAN_CreateSampler(
     SDL_GPURenderer *driverData,
-    const SDL_GPUSamplerCreateInfo *createinfo)
+    const SDL_GPUSamplerCreateInfo *createinfo,
+    SDL_GPUSamplerBorderColor borderColor)
 {
     VulkanRenderer *renderer = (VulkanRenderer *)driverData;
     VulkanSampler *vulkanSampler = SDL_malloc(sizeof(VulkanSampler));
@@ -6635,7 +6643,7 @@ static SDL_GPUSampler *VULKAN_CreateSampler(
     vkSamplerCreateInfo.compareOp = SDLToVK_CompareOp[createinfo->compare_op];
     vkSamplerCreateInfo.minLod = createinfo->min_lod;
     vkSamplerCreateInfo.maxLod = createinfo->max_lod;
-    vkSamplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK; // arbitrary, unused
+    vkSamplerCreateInfo.borderColor = SDLToVK_SamplerBorderColor[borderColor];
     vkSamplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
 
     vulkanResult = renderer->vkCreateSampler(

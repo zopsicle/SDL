@@ -330,6 +330,13 @@ static MTLSamplerAddressMode SDLToMetal_SamplerAddressMode[] = {
     MTLSamplerAddressModeClampToEdge   // CLAMP_TO_EDGE
 };
 
+static MTLSamplerBorderColor SDLToMetal_SamplerBorderColor[] = {
+    MTLSamplerBorderColorTransparentBlack, // INVALID
+    MTLSamplerBorderColorTransparentBlack, // TRANSPARENT_BLACK
+    MTLSamplerBorderColorOpaqueBlack,      // OPAQUE_BLACK
+    MTLSamplerBorderColorOpaqueWhite       // OPAQUE_WHITE
+};
+
 static MTLSamplerMinMagFilter SDLToMetal_MinMagFilter[] = {
     MTLSamplerMinMagFilterNearest, // NEAREST
     MTLSamplerMinMagFilterLinear,  // LINEAR
@@ -1327,7 +1334,8 @@ static void METAL_PopDebugGroup(
 
 static SDL_GPUSampler *METAL_CreateSampler(
     SDL_GPURenderer *driverData,
-    const SDL_GPUSamplerCreateInfo *createinfo)
+    const SDL_GPUSamplerCreateInfo *createinfo,
+    SDL_GPUSamplerBorderColor borderColor)
 {
     @autoreleasepool {
         MetalRenderer *renderer = (MetalRenderer *)driverData;
@@ -1345,6 +1353,7 @@ static SDL_GPUSampler *METAL_CreateSampler(
         samplerDesc.lodMaxClamp = createinfo->max_lod;
         samplerDesc.maxAnisotropy = (NSUInteger)((createinfo->enable_anisotropy) ? createinfo->max_anisotropy : 1);
         samplerDesc.compareFunction = (createinfo->enable_compare) ? SDLToMetal_CompareOp[createinfo->compare_op] : MTLCompareFunctionAlways;
+        samplerDesc.borderColor = SDLToMetal_SamplerBorderColor[borderColor];
 
         if (renderer->debugMode && SDL_HasProperty(createinfo->props, SDL_PROP_GPU_SAMPLER_CREATE_NAME_STRING)) {
             const char *name = SDL_GetStringProperty(createinfo->props, SDL_PROP_GPU_SAMPLER_CREATE_NAME_STRING, NULL);
@@ -4395,7 +4404,8 @@ static void METAL_INTERNAL_InitBlitResources(
 
     renderer->blitNearestSampler = METAL_CreateSampler(
         (SDL_GPURenderer *)renderer,
-        &createinfo);
+        &createinfo,
+        SDL_GPU_SAMPLERBORDERCOLOR_INVALID);
 
     if (renderer->blitNearestSampler == NULL) {
         SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to create blit nearest sampler!");
@@ -4407,7 +4417,8 @@ static void METAL_INTERNAL_InitBlitResources(
 
     renderer->blitLinearSampler = METAL_CreateSampler(
         (SDL_GPURenderer *)renderer,
-        &createinfo);
+        &createinfo,
+        SDL_GPU_SAMPLERBORDERCOLOR_INVALID);
 
     if (renderer->blitLinearSampler == NULL) {
         SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to create blit linear sampler!");

@@ -581,6 +581,13 @@ static D3D12_TEXTURE_ADDRESS_MODE SDLToD3D12_SamplerAddressMode[] = {
     D3D12_TEXTURE_ADDRESS_MODE_CLAMP   // CLAMP_TO_EDGE
 };
 
+static float SDLToD3D12_SamplerBorderColor[][4] = {
+    {0.f, 0.f, 0.f, 0.f}, // INVALID
+    {0.f, 0.f, 0.f, 0.f}, // TRANSPARENT_BLACK
+    {0.f, 0.f, 0.f, 1.f}, // OPAQUE_BLACK
+    {1.f, 1.f, 1.f, 1.f}  // OPAQUE_WHITE
+};
+
 static D3D12_FILTER SDLToD3D12_Filter(
     SDL_GPUFilter minFilter,
     SDL_GPUFilter magFilter,
@@ -3087,7 +3094,8 @@ static SDL_GPUGraphicsPipeline *D3D12_CreateGraphicsPipeline(
 
 static SDL_GPUSampler *D3D12_CreateSampler(
     SDL_GPURenderer *driverData,
-    const SDL_GPUSamplerCreateInfo *createinfo)
+    const SDL_GPUSamplerCreateInfo *createinfo,
+    SDL_GPUSamplerBorderColor borderColor)
 {
     D3D12Renderer *renderer = (D3D12Renderer *)driverData;
     D3D12Sampler *sampler = (D3D12Sampler *)SDL_calloc(1, sizeof(D3D12Sampler));
@@ -3110,10 +3118,10 @@ static SDL_GPUSampler *D3D12_CreateSampler(
     samplerDesc.MinLOD = createinfo->min_lod;
     samplerDesc.MaxLOD = createinfo->max_lod;
     samplerDesc.MipLODBias = createinfo->mip_lod_bias;
-    samplerDesc.BorderColor[0] = 0;
-    samplerDesc.BorderColor[1] = 0;
-    samplerDesc.BorderColor[2] = 0;
-    samplerDesc.BorderColor[3] = 0;
+    samplerDesc.BorderColor[0] = SDLToD3D12_SamplerBorderColor[borderColor][0];
+    samplerDesc.BorderColor[1] = SDLToD3D12_SamplerBorderColor[borderColor][1];
+    samplerDesc.BorderColor[2] = SDLToD3D12_SamplerBorderColor[borderColor][2];
+    samplerDesc.BorderColor[3] = SDLToD3D12_SamplerBorderColor[borderColor][3];
 
     D3D12_INTERNAL_AssignStagingDescriptorHandle(
         renderer,
@@ -8191,7 +8199,8 @@ static void D3D12_INTERNAL_InitBlitResources(
 
     renderer->blitNearestSampler = D3D12_CreateSampler(
         (SDL_GPURenderer *)renderer,
-        &samplerCreateInfo);
+        &samplerCreateInfo,
+        SDL_GPU_SAMPLERBORDERCOLOR_INVALID);
 
     if (renderer->blitNearestSampler == NULL) {
         SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to create blit nearest sampler!");
@@ -8203,7 +8212,8 @@ static void D3D12_INTERNAL_InitBlitResources(
 
     renderer->blitLinearSampler = D3D12_CreateSampler(
         (SDL_GPURenderer *)renderer,
-        &samplerCreateInfo);
+        &samplerCreateInfo,
+        SDL_GPU_SAMPLERBORDERCOLOR_INVALID);
 
     if (renderer->blitLinearSampler == NULL) {
         SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to create blit linear sampler!");

@@ -910,9 +910,26 @@ SDL_GPUSampler *SDL_CreateGPUSampler(
         return NULL;
     }
 
+    SDL_GPUSamplerBorderColor borderColor = SDL_GetNumberProperty(
+        createinfo->props,
+        SDL_PROP_GPU_SAMPLER_CREATE_BORDERCOLOR_NUMBER,
+        SDL_GPU_SAMPLERBORDERCOLOR_INVALID
+    );
+
+    if (device->debug_mode) {
+        if ((createinfo->address_mode_u == SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_BORDER
+                || createinfo->address_mode_v == SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_BORDER
+                || createinfo->address_mode_w == SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_BORDER)
+            && borderColor == SDL_GPU_SAMPLERBORDERCOLOR_INVALID) {
+            SDL_assert_release(!"Clamp-to-border address mode requires border color");
+            return NULL;
+        }
+    }
+
     return device->CreateSampler(
         device->driverData,
-        createinfo);
+        createinfo,
+        borderColor);
 }
 
 SDL_GPUShader *SDL_CreateGPUShader(
